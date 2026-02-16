@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LoneGuard AI · Smart Credit Analysis</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -30,7 +33,7 @@
             border-radius: 48px;
             padding: 40px;
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255,255,255,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         /* Header */
@@ -434,6 +437,7 @@
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -455,6 +459,7 @@
             .upload-grid {
                 grid-template-columns: 1fr;
             }
+
             .metrics-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -464,15 +469,18 @@
             .dashboard {
                 padding: 20px;
             }
+
             .metrics-grid {
                 grid-template-columns: 1fr;
             }
+
             .health-row {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="dashboard">
         <!-- Header -->
@@ -499,7 +507,7 @@
                 </div>
 
                 <input type="file" id="csvUpload" class="file-input" accept=".csv">
-                
+
                 <div class="drop-zone" id="csvDropZone">
                     <span class="upload-icon">📄</span>
                     <h3>Drag & drop CSV or click</h3>
@@ -524,7 +532,7 @@
                 </div>
 
                 <input type="file" id="imageUpload" class="file-input" accept="image/*">
-                
+
                 <div class="drop-zone" id="imageDropZone">
                     <span class="upload-icon">📸</span>
                     <h3>Drag & drop image or click</h3>
@@ -549,7 +557,7 @@
                 </div>
 
                 <input type="file" id="propertyUpload" class="file-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.csv">
-                
+
                 <div class="drop-zone" id="propertyDropZone">
                     <span class="upload-icon">📑</span>
                     <h3>Property / startup docs</h3>
@@ -636,6 +644,7 @@
                         <span>📈</span> Spending & Asset Analysis
                     </div>
                     <div class="spending-pattern" id="analysisContent">
+                        <!-- Content will be populated by JS -->
                         • Housing: ₹4,500 (24.4% of expenses)<br>
                         • Food & Dining: ₹2,850 (15.5%)<br>
                         • Transportation: ₹1,200 (6.5%)<br>
@@ -644,7 +653,8 @@
                         • Other: ₹8,140 (44.2%)<br>
                         <br>
                         <span style="color: #9ae6b4;">✅ Healthy spending with good savings discipline.</span><br>
-                        <span style="color: #fbd38d;" id="assetMessage">📋 No property/startup documents uploaded — collateral not considered.</span>
+                        <span style="color: #fbd38d;" id="assetMessage">📋 No property/startup documents uploaded —
+                            collateral not considered.</span>
                     </div>
                 </div>
 
@@ -656,7 +666,13 @@
         </div>
     </div>
 
+    <script src="js/api.js"></script>
     <script>
+        // State for uploaded files
+        let uploadedCSV = null;
+        let uploadedImage = null;
+        let uploadedProperty = null;
+
         // File upload handling
         function setupFileUpload(dropZoneId, inputId, previewId) {
             const dropZone = document.getElementById(dropZoneId);
@@ -695,7 +711,7 @@
             // Simple validation
             const name = file.name.toLowerCase();
             const inputId = fileInput.id;
-            
+
             if (inputId === 'csvUpload' && !name.endsWith('.csv')) {
                 alert('Please upload a CSV file for transactions.');
                 return;
@@ -706,8 +722,13 @@
             }
             // Property upload accepts multiple types, so no strict validation
 
+            // Store file reference
+            if (inputId === 'csvUpload') uploadedCSV = file;
+            if (inputId === 'imageUpload') uploadedImage = file;
+            if (inputId === 'propertyUpload') uploadedProperty = file;
+
             // Update file input
-            fileInput.files = [file];
+            fileInput.files = createFileList(file);
 
             // Determine icon
             let icon = '📄';
@@ -717,7 +738,7 @@
             else if (name.endsWith('.doc') || name.endsWith('.docx')) icon = '📃';
 
             const fileSize = formatFileSize(file.size);
-            
+
             previewContainer.innerHTML = `
                 <div class="file-preview">
                     <div class="preview-icon">${icon}</div>
@@ -729,16 +750,37 @@
                 </div>
             `;
             previewContainer.style.display = 'block';
+
+            checkAnalyzeButton();
         }
 
-        window.removeFile = function(inputId, previewId) {
+        // Helper to create FileList
+        function createFileList(file) {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            return dt.files;
+        }
+
+        window.removeFile = function (inputId, previewId) {
             const fileInput = document.getElementById(inputId);
             const previewContainer = document.getElementById(previewId);
-            
+
             fileInput.value = '';
             previewContainer.style.display = 'none';
             previewContainer.innerHTML = '';
+
+            if (inputId === 'csvUpload') uploadedCSV = null;
+            if (inputId === 'imageUpload') uploadedImage = null;
+            if (inputId === 'propertyUpload') uploadedProperty = null;
+
+            checkAnalyzeButton();
         };
+
+        function checkAnalyzeButton() {
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            // Allow analysis if at least CSV is present (critical for data)
+            analyzeBtn.disabled = !uploadedCSV;
+        }
 
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
@@ -748,92 +790,168 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
-        // Analyze button click - always works
-        document.getElementById('analyzeBtn').addEventListener('click', () => {
-            const aiOutput = document.getElementById('aiOutput');
-            const assetMessage = document.getElementById('assetMessage');
-            const timestamp = document.getElementById('timestamp');
-            
-            // Check if property file is uploaded
-            const propertyFile = document.getElementById('propertyUpload').files[0];
-            
-            // Update message based on property upload
-            if (propertyFile) {
-                assetMessage.innerHTML = '📋 Property/Startup documents received — AI evaluating collateral & business stability.';
-                assetMessage.style.color = '#9ae6b4';
-            } else {
-                assetMessage.innerHTML = '📋 No property/startup documents uploaded — collateral not considered for this analysis.';
-                assetMessage.style.color = '#fbd38d';
+        // CSV Parser
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                if (values.length === headers.length) {
+                    const row = {};
+                    headers.forEach((h, index) => row[h] = values[index].trim());
+                    data.push(row);
+                }
             }
-            
-            // Update timestamp
-            const now = new Date();
-            const formattedTime = now.toLocaleString('en-IN', { 
-                day: 'numeric', 
-                month: 'long', 
-                year: 'numeric',
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: true 
+            return data;
+        }
+
+        function calculateMetrics(transactions) {
+            let totalIncome = 0;
+            let totalExpense = 0;
+            let incomes = [];
+            let upiCount = 0;
+            let billPayments = 0;
+
+            transactions.forEach(t => {
+                const amount = parseFloat(t.amount);
+                const desc = t.description ? t.description.toLowerCase() : '';
+
+                if (amount > 0) {
+                    totalIncome += amount;
+                    incomes.push(amount);
+                } else {
+                    totalExpense += Math.abs(amount);
+                }
+
+                if (desc.includes('upi')) upiCount++;
+                if (desc.includes('bill') || desc.includes('elect') || desc.includes('water')) billPayments++;
             });
-            timestamp.innerHTML = `Analysis generated • ${formattedTime}`;
-            
-            // Show output with animation
-            aiOutput.classList.add('visible');
-            
-            // Scroll to output smoothly
-            aiOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Calculate Variance
+            const meanIncome = incomes.reduce((a, b) => a + b, 0) / (incomes.length || 1);
+            const variance = incomes.reduce((a, b) => a + Math.pow(b - meanIncome, 2), 0) / (incomes.length || 1);
+            const normalizedVariance = variance > 0 ? Math.min(variance / 10000000, 1) : 0;
+
+            const withdrawalRatio = totalIncome > 0 ? (totalExpense / totalIncome) : 0;
+            const billScore = Math.min(billPayments * 2, 10);
+
+            return {
+                avg_income: Math.round(totalIncome / 3),
+                income_variance: parseFloat(normalizedVariance.toFixed(2)),
+                upi_txn_count: upiCount,
+                bill_payment_score: billScore,
+                withdrawal_ratio: parseFloat(withdrawalRatio.toFixed(2)),
+                total_income: totalIncome,
+                total_expense: totalExpense
+            };
+        }
+
+        // Analyze button click
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const originalText = analyzeBtn.innerHTML;
+
+            try {
+                analyzeBtn.disabled = true;
+                analyzeBtn.innerHTML = '<span>⏳</span> Processing...';
+
+                // 1. Read and Parse CSV
+                const text = await uploadedCSV.text();
+                const transactions = parseCSV(text);
+                const metrics = calculateMetrics(transactions);
+
+                // 2. Prepare API Payload
+                const userId = localStorage.getItem('userId') || 'demo_user_' + Date.now();
+
+                const payload = {
+                    user_id: userId,
+                    avg_income: metrics.avg_income,
+                    income_variance: metrics.income_variance,
+                    upi_txn_count: metrics.upi_txn_count,
+                    bill_payment_score: metrics.bill_payment_score,
+                    withdrawal_ratio: metrics.withdrawal_ratio
+                };
+
+                // 3. Call API
+                const result = await apiPost('/calculate-score', payload);
+
+                // 4. Update UI
+                updateDashboard(result, metrics);
+
+                // Show output
+                const aiOutput = document.getElementById('aiOutput');
+                aiOutput.classList.add('visible');
+                aiOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            } catch (error) {
+                console.error("Analysis failed:", error);
+                alert("Analysis failed. Please check console for details.");
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = originalText;
+            }
         });
 
-        // Initialize upload handlers for three zones
+        function updateDashboard(apiResult, metrics) {
+            // Update Metrics
+            document.querySelectorAll('.metric-value')[0].innerText = '₹' + metrics.total_income.toLocaleString();
+            document.querySelectorAll('.metric-value')[1].innerText = '₹' + metrics.total_expense.toLocaleString();
+            document.querySelectorAll('.metric-value')[2].innerText = '₹' + (metrics.total_income - metrics.total_expense).toLocaleString();
+
+            // Update Savings Ratio
+            const savingsRatio = ((metrics.total_income - metrics.total_expense) / metrics.total_income * 100).toFixed(1);
+            document.querySelectorAll('.metric-value')[3].innerText = savingsRatio + '%';
+
+            // Update Health Cards
+            document.querySelector('.health-value').innerText = apiResult.risk_category === 'High Risk' ? 'Needs Attention' : 'Excellent';
+
+            // Risk Level
+            const riskEl = document.querySelector('.risk-indicator');
+            riskEl.className = 'risk-indicator';
+            if (apiResult.risk_category === 'Low Risk') {
+                riskEl.classList.add('risk-low');
+                riskEl.innerText = 'Low Risk';
+            } else if (apiResult.risk_category === 'Medium Risk') {
+                riskEl.classList.add('risk-medium');
+                riskEl.innerText = 'Medium Risk';
+            } else {
+                riskEl.classList.add('risk-high');
+                riskEl.innerText = 'High Risk';
+            }
+
+            // Trust Score
+            document.querySelector('.risk-indicator + div').innerText = `Trust Score: ${apiResult.digital_trust_score}/100`;
+
+            // Spending Pattern & Property Message
+            const explanationHTML = apiResult.explanation.map(exp => `• ${exp}`).join('<br>');
+
+            // Property Message
+            let propertyMsg = '';
+            if (uploadedProperty) {
+                propertyMsg = `<br><span style="color: #9ae6b4;">📋 Property/Startup documents received — AI evaluating collateral & business stability.</span>`;
+            } else {
+                propertyMsg = `<br><span style="color: #fbd38d;">📋 No property/startup documents uploaded — collateral not considered.</span>`;
+            }
+
+            document.querySelector('.spending-pattern').innerHTML = `
+                ${explanationHTML}
+                <br>
+                ${propertyMsg}
+                <br><br>
+                <span style="color: #9ae6b4;">✅ AI Analysis Complete.</span>
+            `;
+
+            // Timestamp
+            document.querySelector('.output-card > div:last-child').innerText = 'Analysis generated • ' + new Date().toLocaleString();
+        }
+
+        // Initialize upload handlers
         setupFileUpload('csvDropZone', 'csvUpload', 'csvPreview');
         setupFileUpload('imageDropZone', 'imageUpload', 'imagePreview');
         setupFileUpload('propertyDropZone', 'propertyUpload', 'propertyPreview');
-
-        // Optional: Pre-fill with demo files (commented out - user can upload their own)
-        // Uncomment if you want demo files to load automatically
-        /*
-        window.addEventListener('load', () => {
-            // Sample CSV
-            fetch('data:text/csv;charset=utf-8,date,amount,description\n2024-01-01,5000,Salary\n2024-01-05,-1500,Rent')
-                .then(res => res.blob())
-                .then(blob => {
-                    const file = new File([blob], "transactions_q1_2026.csv", { type: "text/csv" });
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    document.getElementById('csvUpload').files = dataTransfer.files;
-                    
-                    const previewContainer = document.getElementById('csvPreview');
-                    previewContainer.innerHTML = `
-                        <div class="file-preview">
-                            <div class="preview-icon">📊</div>
-                            <div class="preview-details">
-                                <div class="preview-name">transactions_q1_2026.csv</div>
-                                <div class="preview-size">2.4 MB</div>
-                            </div>
-                            <div class="preview-remove" onclick="removeFile('csvUpload', 'csvPreview')">✕</div>
-                        </div>
-                    `;
-                    previewContainer.style.display = 'block';
-                });
-
-            // Sample image
-            setTimeout(() => {
-                const previewContainer = document.getElementById('imagePreview');
-                previewContainer.innerHTML = `
-                    <div class="file-preview">
-                        <div class="preview-icon">🖼️</div>
-                        <div class="preview-details">
-                            <div class="preview-name">balance_screenshot.png</div>
-                            <div class="preview-size">1.8 MB</div>
-                        </div>
-                        <div class="preview-remove" onclick="removeFile('imageUpload', 'imagePreview')">✕</div>
-                    </div>
-                `;
-                previewContainer.style.display = 'block';
-            }, 200);
-        });
-        */
     </script>
 </body>
+
 </html>
