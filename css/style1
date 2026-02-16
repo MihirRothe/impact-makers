@@ -1,0 +1,106 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  height: 100vh;
+  background: #f3f4f6;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+/* LEFT PANEL */
+.left-panel {
+  flex: 1;
+  background: linear-gradient(135deg, #2b5ed7, #1e3caa);
+  color: white;
+  padding: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.left-panel h1 {
+  font-size: 42px;
+  margin: 20px 0;
+}
+
+.left-panel .small-text {
+  max-width: 450px;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+/* RIGHT PANEL */
+.right-panel {
+  flex: 1;
+  background-color: #f2f2f2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* FORM CARD */
+.form-card {
+  background: white;
+  padding: 40px;
+  width: 380px;
+  border-radius: 15px;
+  box-shadow: 0px 10px 25px rgba(0,0,0,0.1);
+}
+
+.form-card h2 {
+  margin-bottom: 10px;
+}
+
+.form-card p {
+  margin-bottom: 20px;
+  color: gray;
+}
+
+.form-card input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.form-card input:focus {
+  outline: none;
+  border-color: #2b5ed7;
+}
+
+.form-card button {
+  width: 100%;
+  padding: 12px;
+  background: #2b5ed7;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.form-card button:hover {
+  background: #1e3caa;
+}
+
+.bottom-text {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 13px;
+}
+
+.bottom-text a {
+  color: #2b5ed7;
+  text-decoration: none;
+}
